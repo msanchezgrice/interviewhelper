@@ -1,0 +1,206 @@
+/* InterviewHelper AI Extension Styles */
+
+/* Floating Button */
+#interviewhelper-floating-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 999999;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+  cursor: pointer;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#interviewhelper-floating-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+}
+
+.ih-button-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ih-icon {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+}
+
+.ih-button-text {
+  white-space: nowrap;
+}
+
+.ih-status-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid white;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ih-status-indicator.active {
+  opacity: 1;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Sidebar Container */
+#interviewhelper-sidebar-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  height: 100vh;
+  z-index: 999998;
+  transition: transform 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#interviewhelper-sidebar-container.ih-sidebar-hidden {
+  transform: translateX(100%);
+}
+
+#interviewhelper-sidebar-container.ih-sidebar-visible {
+  transform: translateX(0);
+}
+
+/* Resize Handle */
+.ih-resize-handle {
+  position: absolute;
+  left: -5px;
+  top: 0;
+  width: 10px;
+  height: 100%;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 999999;
+}
+
+.ih-resize-handle::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 30px;
+  background: rgba(102, 126, 234, 0.5);
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ih-resize-handle:hover::before {
+  opacity: 1;
+}
+
+/* Sidebar Iframe */
+#interviewhelper-sidebar {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: white;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Hide in screen recordings/shares */
+@media screen and (min-device-width: 1px) {
+  .screen-share-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  #interviewhelper-floating-button {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .ih-button-text {
+    display: none;
+  }
+  
+  #interviewhelper-sidebar-container {
+    width: 100vw;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  #interviewhelper-floating-button {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  #interviewhelper-sidebar {
+    background: #1f2937;
+  }
+}
+
+/* Animation for new suggestions */
+.ih-suggestion-new {
+  animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Accessibility */
+#interviewhelper-floating-button:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Prevent interference with video conferencing UIs */
+#interviewhelper-floating-button,
+#interviewhelper-sidebar-container {
+  pointer-events: auto;
+}
+
+/* Google Meet specific adjustments */
+body[data-use-corporate-user-menu] #interviewhelper-floating-button {
+  top: 80px;
+}
+
+/* Zoom specific adjustments */
+.zoom-app #interviewhelper-floating-button {
+  top: 80px;
+}
+
+/* Teams specific adjustments */
+.teams-app #interviewhelper-floating-button {
+  top: 60px;
+}

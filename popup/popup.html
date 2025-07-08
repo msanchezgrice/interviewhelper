@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interview Helper AI</title>
+  <style>
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8fafc;
+    }
+
+    .popup-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .header-text h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .header-text p {
+      margin: 0;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .popup-content {
+      padding: 16px;
+    }
+
+    .status-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .status-label {
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .status-value {
+      font-weight: 500;
+      color: #374151;
+      font-size: 13px;
+    }
+
+    .status-active {
+      color: #10b981;
+    }
+
+    .quick-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-btn {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .action-btn:hover {
+      background: #f8fafc;
+      border-color: #667eea;
+    }
+
+    .action-icon {
+      width: 32px;
+      height: 32px;
+      background: #f3f4f6;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .action-text h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .action-text p {
+      margin: 0;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .footer {
+      padding: 12px 16px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-link {
+      color: #6b7280;
+      font-size: 12px;
+      text-decoration: none;
+    }
+
+    .footer-link:hover {
+      color: #667eea;
+    }
+
+    .api-warning {
+      background: #fef2f2;
+      border: 1px solid #fee2e2;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="popup-header">
+    <div class="logo">🎙️</div>
+    <div class="header-text">
+      <h1>Interview Helper AI</h1>
+      <p>Your AI-powered research assistant</p>
+    </div>
+  </div>
+
+  <div class="popup-content">
+    <div class="status-card">
+      <div class="status-row">
+        <span class="status-label">Extension Status</span>
+        <span class="status-value status-active" id="extensionStatus">Active</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Current Tab</span>
+        <span class="status-value" id="currentTab">Not on meeting page</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Interviews Recorded</span>
+        <span class="status-value" id="interviewCount">0</span>
+      </div>
+    </div>
+
+    <div id="apiWarning" class="api-warning" style="display: none;">
+      ⚠️ API key not configured. Click settings to add your OpenAI API key.
+    </div>
+
+    <div class="quick-actions">
+      <a href="#" class="action-btn" id="openDashboard">
+        <div class="action-icon">📊</div>
+        <div class="action-text">
+          <h3>Interview Dashboard</h3>
+          <p>View all recorded interviews</p>
+        </div>
+      </a>
+
+      <a href="#" class="action-btn" id="openSettings">
+        <div class="action-icon">⚙️</div>
+        <div class="action-text">
+          <h3>Settings</h3>
+          <p>Configure API keys and preferences</p>
+        </div>
+      </a>
+
+      <a href="https://meet.google.com" target="_blank" class="action-btn">
+        <div class="action-icon">📹</div>
+        <div class="action-text">
+          <h3>Start Google Meet</h3>
+          <p>Launch a new meeting</p>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="#" class="footer-link" id="helpLink">Help & Documentation</a>
+    <span class="footer-link">v1.0.0</span>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interview Helper AI - Settings</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8fafc;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .header {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .settings-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .settings-section h2 {
+      font-size: 18px;
+      color: #111827;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-help {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .toggle-group:last-child {
+      border-bottom: none;
+    }
+
+    .toggle-label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toggle-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .toggle-description {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 24px;
+      background: #e5e7eb;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-switch input {
+      display: none;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      transform: translateX(24px);
+    }
+
+    .toggle-switch input:checked ~ .toggle-bg {
+      background: #667eea;
+    }
+
+    .toggle-bg {
+      position: absolute;
+      inset: 0;
+      background: #e5e7eb;
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5a67d8;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .success-message {
+      background: #dcfce7;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .danger-zone {
+      border: 1px solid #fee2e2;
+      background: #fef2f2;
+    }
+
+    .danger-zone h2 {
+      color: #dc2626;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    .select-wrapper {
+      position: relative;
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 14px;
+      appearance: none;
+      background: white;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚙️ Settings</h1>
+      <p>Configure your Interview Helper AI preferences</p>
+    </div>
+
+    <div id="successMessage" class="success-message">
+      ✓ Settings saved successfully!
+    </div>
+
+    <!-- API Configuration -->
+    <div class="settings-section">
+      <h2>🔑 API Configuration</h2>
+      
+      <div class="form-group">
+        <label class="form-label" for="apiKey">OpenAI API Key</label>
+        <input type="password" id="apiKey" class="form-input" placeholder="sk-..." />
+        <p class="form-help">Your API key is stored locally and never sent to our servers. <a href="https://platform.openai.com/api-keys" target="_blank">Get your API key</a></p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="aiModel">AI Model</label>
+        <div class="select-wrapper">
+          <select id="aiModel" class="form-select">
+            <option value="gpt-4-turbo-preview">GPT-4 Turbo (Recommended)</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Faster, Lower Cost)</option>
+          </select>
+          <span class="select-arrow">▼</span>
+        </div>
+        <p class="form-help">Choose the AI model for generating suggestions</p>
+      </div>
+    </div>
+
+    <!-- Interview Preferences -->
+    <div class="settings-section">
+      <h2>🎙️ Interview Preferences</h2>
+      
+      <div class="toggle-group">
+        <div class="toggle-label">
+          <span class="toggle-title">Auto-start recording</span>
+          <span class="toggle-description">Automatically start recording when joining a meeting</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="autoStart" />
+          <span class="toggle-slider"></span>
+          <span class="toggle-bg"></span>
+        </label>
+      </div>
+
+      <div class="toggle-group">
+        <div class="toggle-label">
+          <span class="toggle-title">Real-time suggestions</span>
+          <span class="toggle-description">Show AI suggestions during the interview</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="realtimeSuggestions" checked />
+          <span class="toggle-slider"></span>
+          <span class="toggle-bg"></span>
+        </label>
+      </div>
+
+      <div class="toggle-group">
+        <div class="toggle-label">
+          <span class="toggle-title">Hide from screen share</span>
+          <span class="toggle-description">Automatically hide the helper when sharing screen</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="hideFromScreenShare" checked />
+          <span class="toggle-slider"></span>
+          <span class="toggle-bg"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Privacy & Data -->
+    <div class="settings-section">
+      <h2>🔒 Privacy & Data</h2>
+      
+      <div class="toggle-group">
+        <div class="toggle-label">
+          <span class="toggle-title">Save interview transcripts</span>
+          <span class="toggle-description">Store transcripts locally for future reference</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="saveTranscripts" checked />
+          <span class="toggle-slider"></span>
+          <span class="toggle-bg"></span>
+        </label>
+      </div>
+
+      <div class="toggle-group">
+        <div class="toggle-label">
+          <span class="toggle-title">Analytics</span>
+          <span class="toggle-description">Share anonymous usage data to help improve the extension</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="analytics" />
+          <span class="toggle-slider"></span>
+          <span class="toggle-bg"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Save/Cancel Buttons -->
+    <div class="button-group">
+      <button class="btn btn-primary" id="saveBtn">Save Settings</button>
+      <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="settings-section danger-zone">
+      <h2>⚠️ Danger Zone</h2>
+      
+      <div class="form-group">
+        <p style="margin-bottom: 12px;">Clear all stored data including interviews, transcripts, and settings.</p>
+        <button class="btn btn-danger" id="clearDataBtn">Clear All Data</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
