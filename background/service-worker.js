@@ -1,13 +1,26 @@
 // Background service worker for InterviewHelper AI
+import('./config/supabase.js').then(module => {
+  self.SupabaseClient = module.SupabaseClient || module.default;
+});
+
 let activeTabId = null;
 let isRecording = false;
 let transcriptionWorker = null;
 let currentTranscript = [];
 let interviewStartTime = null;
+let supabaseClient = null;
+let currentInterviewId = null;
 
 // Initialize extension
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
   console.log('InterviewHelper AI installed');
+  
+  // Initialize Supabase client
+  if (self.SupabaseClient) {
+    supabaseClient = new self.SupabaseClient();
+    await supabaseClient.initialize();
+  }
+  
   chrome.storage.local.set({
     settings: {
       apiKey: '',
@@ -201,9 +214,8 @@ function getCurrentTranscriptContext() {
 }
 
 // Save complete interview data
-function saveInterviewData() {
+async function saveInterviewData() {
   const interviewData = {
-    id: Date.now(),
     startTime: interviewStartTime,
     endTime: new Date(),
     transcript: currentTranscript,
@@ -211,11 +223,35 @@ function saveInterviewData() {
     notes: []
   };
   
-  chrome.storage.local.get(['interviews'], (result) => {
-    const interviews = result.interviews || [];
-    interviews.push(interviewData);
-    chrome.storage.local.set({ interviews });
-  });
+  try {
+    if (supabaseClient) {
+      const result = await supabaseClient.saveInterview(interviewData);
+      console.log('Interview saved to Supabase:', result);
+      currentInterviewId = result[0]?.id;
+    }
+    
+    // Also save to local storage as backup
+    chrome.storage.local.get(['interviews'], (result) => {
+      const interviews = result.interviews || [];
+      interviews.push({
+        id: currentInterviewId || Date.now(),
+        ...interviewData
+      });
+      chrome.storage.local.set({ interviews });
+    });
+  } catch (error) {
+    console.error('Error saving interview:', error);
+    
+    // Fallback to local storage only
+    chrome.storage.local.get(['interviews'], (result) => {
+      const interviews = result.interviews || [];
+      interviews.push({
+        id: Date.now(),
+        ...interviewData
+      });
+      chrome.storage.local.set({ interviews });
+    });
+  }
 }
 
 // Handle tab updates (detect when user enters/leaves meeting)

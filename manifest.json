@@ -14,7 +14,8 @@
     "https://meet.google.com/*",
     "https://*.zoom.us/*",
     "https://teams.microsoft.com/*",
-    "https://*.webex.com/*"
+    "https://*.webex.com/*",
+    "https://ftmcmonyfetjeimoxrbt.supabase.co/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js",
