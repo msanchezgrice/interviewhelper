@@ -9,6 +9,8 @@ function initializeUI() {
   if (isInjected) return;
   isInjected = true;
   
+  console.log('🎯 InterviewHelper: Initializing UI on', window.location.hostname);
+  
   // Create floating button
   createFloatingButton();
   
@@ -20,6 +22,9 @@ function initializeUI() {
   
   // Set up mutation observer to handle dynamic content
   observePageChanges();
+  
+  // Show confirmation that extension is active
+  showInitializationToast();
 }
 
 // Create the floating action button
@@ -198,6 +203,48 @@ function observePageChanges() {
     attributes: true,
     attributeFilter: ['data-call-state']
   });
+}
+
+// Show initialization toast to confirm extension is working
+function showInitializationToast() {
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    z-index: 999999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+    animation: slideDown 0.3s ease;
+  `;
+  
+  toast.innerHTML = '🎯 Interview Helper AI - Ready to assist!';
+  document.body.appendChild(toast);
+  
+  // Add animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideDown {
+      from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    toast.style.animation = 'slideDown 0.3s ease reverse';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+  
+  console.log('🎯 InterviewHelper: Initialization toast shown');
 }
 
 // Platform-specific audio capture setup
