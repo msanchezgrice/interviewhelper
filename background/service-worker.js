@@ -1,8 +1,4 @@
 // Background service worker for InterviewHelper AI
-import('./config/supabase.js').then(module => {
-  self.SupabaseClient = module.SupabaseClient || module.default;
-});
-
 let activeTabId = null;
 let isRecording = false;
 let transcriptionWorker = null;
@@ -11,15 +7,16 @@ let interviewStartTime = null;
 let supabaseClient = null;
 let currentInterviewId = null;
 
+// Supabase configuration - inline to avoid import issues
+const SUPABASE_URL = 'https://ftmcmonyfetjeimoxrbt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0bWNtb255ZmV0amVpbW94cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODQ5MTMsImV4cCI6MjA2NzU2MDkxM30.UOEOIpUlG-r4pJ6Kb1xsL1s36RBoS9SAQA6pq2oYi4g';
+
 // Initialize extension
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('InterviewHelper AI installed');
   
-  // Initialize Supabase client
-  if (self.SupabaseClient) {
-    supabaseClient = new self.SupabaseClient();
-    await supabaseClient.initialize();
-  }
+  // Note: Supabase client will be initialized when first needed
+  console.log('Extension initialized successfully');
   
   chrome.storage.local.set({
     settings: {
