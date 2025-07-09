@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Helper Extension Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .instructions {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interview Helper AI - Extension Test</h1>
+        
+        <div class="instructions">
+            <h3>📋 Testing Instructions:</h3>
+            <ol>
+                <li>Load the extension in Chrome Developer Mode</li>
+                <li>Click the extension icon in the toolbar</li>
+                <li>Test the popup functionality</li>
+                <li>Open a Google Meet tab to test content script injection</li>
+                <li>Check the dashboard by clicking the extension icon</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Extension Loading Test</h3>
+            <p>To load the extension:</p>
+            <ol>
+                <li>Open Chrome and go to <code>chrome://extensions/</code></li>
+                <li>Enable "Developer mode" in the top right</li>
+                <li>Click "Load unpacked" and select this project folder</li>
+                <li>The InterviewHelper AI extension should appear</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Feature Tests</h3>
+            <button class="button" onclick="testLocalStorage()">Test Local Storage</button>
+            <button class="button" onclick="testExtensionAPI()">Test Extension API</button>
+            <button class="button" onclick="openMeetingTab()">Open Google Meet</button>
+            <div id="test-results" class="status" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Expected Functionality</h3>
+            <ul>
+                <li>✅ Extension popup should open when clicking the icon</li>
+                <li>✅ Dashboard should open when clicking on extension icon</li>
+                <li>✅ Content script should inject into meeting platforms</li>
+                <li>✅ Settings page should be accessible</li>
+                <li>✅ Local storage should work for saving settings</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>🔗 Quick Links</h3>
+            <button class="button" onclick="window.open('https://meet.google.com', '_blank')">Open Google Meet</button>
+            <button class="button" onclick="window.open('https://zoom.us', '_blank')">Open Zoom</button>
+            <button class="button" onclick="window.open('https://teams.microsoft.com', '_blank')">Open Teams</button>
+        </div>
+    </div>
+
+    <script>
+        function testLocalStorage() {
+            const results = document.getElementById('test-results');
+            results.style.display = 'block';
+            
+            try {
+                // Test localStorage
+                const testData = { test: 'value', timestamp: Date.now() };
+                localStorage.setItem('interviewhelper-test', JSON.stringify(testData));
+                const retrieved = JSON.parse(localStorage.getItem('interviewhelper-test'));
+                
+                if (retrieved.test === 'value') {
+                    results.className = 'status success';
+                    results.innerHTML = '✅ Local Storage test passed!';
+                } else {
+                    throw new Error('Data mismatch');
+                }
+                
+                // Clean up
+                localStorage.removeItem('interviewhelper-test');
+            } catch (error) {
+                results.className = 'status error';
+                results.innerHTML = '❌ Local Storage test failed: ' + error.message;
+            }
+        }
+
+        function testExtensionAPI() {
+            const results = document.getElementById('test-results');
+            results.style.display = 'block';
+            
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                results.className = 'status success';
+                results.innerHTML = '✅ Chrome Extension API is available!';
+            } else {
+                results.className = 'status error';
+                results.innerHTML = '❌ Chrome Extension API not available. Make sure the extension is loaded.';
+            }
+        }
+
+        function openMeetingTab() {
+            window.open('https://meet.google.com', '_blank');
+            const results = document.getElementById('test-results');
+            results.style.display = 'block';
+            results.className = 'status success';
+            results.innerHTML = '✅ Google Meet tab opened. Check if the extension content script is injected.';
+        }
+    </script>
+</body>
+</html>

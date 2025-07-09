@@ -35,6 +35,15 @@ chrome.runtime.onInstalled.addListener(async () => {
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.action) {
+    case 'getStatus':
+      sendResponse({ 
+        initialized: true, 
+        isRecording: isRecording,
+        activeTabId: activeTabId,
+        supabaseConnected: supabaseClient !== null
+      });
+      break;
+    
     case 'startInterview':
       startInterview(sender.tab.id);
       sendResponse({ success: true });

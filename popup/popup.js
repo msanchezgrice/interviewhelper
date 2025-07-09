@@ -77,9 +77,13 @@ async function checkCurrentTab() {
 
 // Check API key configuration
 async function checkAPIKey() {
-  chrome.storage.local.get(['apiKey'], (result) => {
-    if (!result.apiKey) {
-      document.getElementById('apiWarning').style.display = 'block';
+  chrome.storage.local.get(['settings'], (result) => {
+    const settings = result.settings || {};
+    if (!settings.apiKey) {
+      const apiWarning = document.getElementById('apiWarning');
+      if (apiWarning) {
+        apiWarning.style.display = 'block';
+      }
     }
   });
 }
