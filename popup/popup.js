@@ -34,7 +34,7 @@ function setupEventListeners() {
   
   document.getElementById('openDashboard').addEventListener('click', (e) => {
     e.preventDefault();
-    chrome.tabs.create({ url: chrome.runtime.getURL('dashboard/dashboard.html') });
+    chrome.tabs.create({ url: 'https://ideafeedback.co/dashboard' });
   });
   
   document.getElementById('openSettings').addEventListener('click', (e) => {
@@ -44,7 +44,7 @@ function setupEventListeners() {
   
   document.getElementById('helpLink').addEventListener('click', (e) => {
     e.preventDefault();
-    chrome.tabs.create({ url: 'https://github.com/yourusername/interview-helper-ai/wiki' });
+    chrome.tabs.create({ url: 'https://ideafeedback.co' });
   });
 }
 
