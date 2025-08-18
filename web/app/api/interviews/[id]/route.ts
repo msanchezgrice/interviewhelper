@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { auth } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
 
 function svc() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL as string, process.env.SUPABASE_SERVICE_ROLE_KEY as string, { auth: { persistSession: false } });
@@ -8,7 +8,8 @@ function svc() {
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
-    const { userId } = auth();
+    const user = await currentUser();
+    const userId = user?.id;
     if (!userId) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
     const supabase = svc();
     const { data, error } = await supabase.from('interviews').select('*').eq('user_id', userId).eq('id', params.id).maybeSingle();
