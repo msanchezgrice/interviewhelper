@@ -4,7 +4,10 @@ import React from 'react';
 
 export const metadata = {
   title: 'Idea Feedback',
-  description: 'Research interviewees, run smarter calls, and capture insights automatically.'
+  description: 'Research interviewees, run smarter calls, and capture insights automatically.',
+  icons: {
+    icon: '/favicon.svg',
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
