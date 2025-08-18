@@ -1,10 +1,11 @@
-import { withClerkMiddleware } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
+import { authMiddleware } from '@clerk/nextjs';
 
-export default withClerkMiddleware(() => NextResponse.next());
+export default authMiddleware({
+  publicRoutes: ['/', '/api/health']
+});
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/api/:path*']
+  matcher: ['/((?!_next|.*\..*).*)']
 };
 
 
