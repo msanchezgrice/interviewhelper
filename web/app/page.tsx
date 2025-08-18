@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 
 export default function LandingPage() {
   return (
@@ -11,15 +11,12 @@ export default function LandingPage() {
             <div className="font-bold text-xl text-gray-900">Idea Feedback</div>
             <div className="flex items-center gap-4">
               <SignedOut>
-                <SignInButton 
-                  mode="modal"
-                  fallbackRedirectUrl="/dashboard"
-                  signUpFallbackRedirectUrl="/dashboard"
+                <Link 
+                  href="/sign-in"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
-                  <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
-                    Sign in
-                  </button>
-                </SignInButton>
+                  Sign in
+                </Link>
                 <Link 
                   href="https://github.com/msanchezgrice/interviewhelper" 
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm"
@@ -71,15 +68,12 @@ export default function LandingPage() {
                 </Link>
               </SignedIn>
               <SignedOut>
-                <SignInButton 
-                  mode="modal"
-                  fallbackRedirectUrl="/dashboard"
-                  signUpFallbackRedirectUrl="/dashboard"
+                <Link 
+                  href="/sign-in"
+                  className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium inline-block"
                 >
-                  <button className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium">
-                    Sign In to Dashboard
-                  </button>
-                </SignInButton>
+                  Sign In to Dashboard
+                </Link>
               </SignedOut>
             </div>
           </div>
