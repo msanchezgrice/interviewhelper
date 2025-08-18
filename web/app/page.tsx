@@ -14,7 +14,7 @@ export default function LandingPage() {
       </div>
       <main className="container">
         <section className="hero">
-          <h1 style={{ fontSize: 40, margin: 0, lineHeight: 1.2 }}>Run smarter user interviews with an AI copilot</h1>
+          <h1 style={{ fontSize: 44, margin: 0, lineHeight: 1.2 }}>Run smarter user interviews with an AI copilot</h1>
           <p style={{ color: '#4b5563', fontSize: 18, marginTop: 12, maxWidth: 720 }}>
             Designed for solopreneurs: research your interviewees, get real‑time AI suggestions, capture transcripts, auto‑classify notes, and leave with a meeting summary and MVP feature ideas.
           </p>
@@ -25,6 +25,7 @@ export default function LandingPage() {
         </section>
 
         <section>
+          <h2 style={{ fontSize: 24, marginBottom: 12 }}>What you get</h2>
           <div className="grid">
             {[
               { t: 'Interviewee research', d: 'Pull verified public context to prep quickly.' },
@@ -37,6 +38,23 @@ export default function LandingPage() {
               <div key={f.t} className="card">
                 <h3 style={{ marginTop: 0 }}>{f.t}</h3>
                 <p style={{ color: '#4b5563' }}>{f.d}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section style={{ marginTop: 40 }}>
+          <h2 style={{ fontSize: 24, marginBottom: 12 }}>How it works</h2>
+          <div className="grid">
+            {[ 'Research', 'Interview', 'Summarize', 'Ship MVP' ].map((step, i) => (
+              <div key={step} className="card">
+                <div style={{ fontWeight:600, marginBottom:6 }}>{i+1}. {step}</div>
+                <p style={{ color:'#4b5563' }}>
+                  {i===0 && 'Paste name/LinkedIn and click Research. We compile verifiable context – no fluff.'}
+                  {i===1 && 'Open the sidebar on your call. Get real‑time suggestions and capture a persistent transcript.'}
+                  {i===2 && 'Stop the interview to auto‑generate a structured summary with quotes and next steps.'}
+                  {i===3 && 'Use the feature ideas to plan your MVP and follow‑ups.'}
+                </p>
               </div>
             ))}
           </div>
