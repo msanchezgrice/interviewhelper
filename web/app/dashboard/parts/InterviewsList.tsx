@@ -1,5 +1,5 @@
 import 'server-only';
-import { getInterviews } from '@/lib/data';
+import { getInterviews } from '../../../lib/data';
 
 export default async function InterviewsList() {
   const { items } = await getInterviews();
