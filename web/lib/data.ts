@@ -1,6 +1,6 @@
 import 'server-only';
 import { createClient } from '@supabase/supabase-js';
-import { auth } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 
 function getServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
@@ -9,7 +9,8 @@ function getServiceClient() {
 }
 
 export async function getInterviews() {
-  const { userId } = auth();
+  const user = await currentUser();
+  const userId = user?.id;
   if (!userId) return { items: [] };
   const supabase = getServiceClient();
   const { data, error } = await supabase
