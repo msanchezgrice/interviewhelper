@@ -3,7 +3,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import React from 'react';
 
 export const metadata = {
-  title: 'Interview Helper AI',
+  title: 'Idea Feedback',
   description: 'Research interviewees, run smarter calls, and capture insights automatically.'
 };
 

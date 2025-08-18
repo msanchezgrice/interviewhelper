@@ -8,10 +8,14 @@ export default function LandingPage() {
       <header className="sticky top-0 bg-white border-b border-gray-200 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="font-bold text-xl text-gray-900">Interview Helper AI</div>
+            <div className="font-bold text-xl text-gray-900">Idea Feedback</div>
             <div className="flex items-center gap-4">
               <SignedOut>
-                <SignInButton mode="modal">
+                <SignInButton 
+                  mode="modal"
+                  fallbackRedirectUrl="/dashboard"
+                  signUpFallbackRedirectUrl="/dashboard"
+                >
                   <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
                     Sign in
                   </button>
@@ -67,7 +71,11 @@ export default function LandingPage() {
                 </Link>
               </SignedIn>
               <SignedOut>
-                <SignInButton mode="modal">
+                <SignInButton 
+                  mode="modal"
+                  fallbackRedirectUrl="/dashboard"
+                  signUpFallbackRedirectUrl="/dashboard"
+                >
                   <button className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium">
                     Sign In to Dashboard
                   </button>
