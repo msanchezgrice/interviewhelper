@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { auth } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 import InterviewsList from './parts/InterviewsList';
 
 export default async function DashboardPage() {
-  const { userId } = auth();
+  const user = await currentUser();
+  const userId = user?.id;
   return (
     <div className="container">
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
