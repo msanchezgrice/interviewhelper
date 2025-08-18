@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "InterviewHelper AI",
+  "name": "Idea Feedback - AI Interview Assistant",
   "version": "1.0.0",
-  "description": "AI-powered copilot for user researchers conducting interviews - real-time guidance, notes, and follow-ups",
+  "description": "AI-powered interview assistant with real-time transcription, smart suggestions, and automated summaries for user research",
   "permissions": [
     "storage",
     "tabs",
@@ -18,7 +18,9 @@
     "https://*.webex.com/*",
     "https://*.linkedin.com/*",
     "https://ftmcmonyfetjeimoxrbt.supabase.co/*",
-    "https://api.openai.com/*"
+    "https://api.openai.com/*",
+    "https://ideafeedback.co/*",
+    "https://www.ideafeedback.co/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js",

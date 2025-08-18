@@ -261,11 +261,41 @@
   <div class="container">
     <div class="header">
       <h1>⚙️ Settings</h1>
-      <p>Configure your Interview Helper AI preferences</p>
+      <p>Configure your Idea Feedback preferences</p>
     </div>
 
     <div id="successMessage" class="success-message">
       ✓ Settings saved successfully!
+    </div>
+
+    <!-- Account Section -->
+    <div class="settings-section">
+      <h2>👤 Account</h2>
+      
+      <div id="accountStatus" style="margin-bottom: 20px;">
+        <!-- This will be populated by JavaScript -->
+      </div>
+      
+      <div id="signInSection">
+        <p style="margin-bottom: 12px;">Sign in to sync your interviews across devices and access them on the web dashboard.</p>
+        <button class="btn btn-primary" id="signInBtn">Sign in with Idea Feedback</button>
+      </div>
+      
+      <div id="signedInSection" style="display: none;">
+        <div class="form-group">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div style="width: 40px; height: 40px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+              <span id="userInitial">?</span>
+            </div>
+            <div>
+              <div id="userName" style="font-weight: 500; color: #111827;">Loading...</div>
+              <div id="userEmail" style="font-size: 12px; color: #6b7280;">Loading...</div>
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="viewDashboardBtn">View Dashboard</button>
+          <button class="btn btn-secondary" id="signOutBtn" style="margin-left: 8px;">Sign Out</button>
+        </div>
+      </div>
     </div>
 
     <!-- API Configuration -->
