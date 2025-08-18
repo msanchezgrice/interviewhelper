@@ -276,7 +276,7 @@
   </div>
 
   <div class="sidebar-content">
-    <!-- Status Section -->
+    <!-- Status Section (moved to top) -->
     <div class="section">
       <div class="section-header">
         <span>Status</span>
@@ -294,7 +294,55 @@
       </div>
     </div>
 
-    <!-- Live Transcript Section -->
+    <!-- Prepare for Interview Section -->
+    <div class="section">
+      <div class="section-header">
+        <span>Prepare for Interview</span>
+        <button class="collapse-btn" data-section="prepare">▼</button>
+      </div>
+      <div class="section-content">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
+          <label style="font-size: 12px; color: #6b7280;">Interviewee Name</label>
+          <input id="prepName" type="text" placeholder="Full name" style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;" />
+          <label style="font-size: 12px; color: #6b7280;">LinkedIn URL</label>
+          <input id="prepLinkedin" type="url" placeholder="https://www.linkedin.com/in/..." style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;" />
+          <label style="font-size: 12px; color: #6b7280;">Goal of Interview</label>
+          <textarea id="prepGoal" placeholder="What are you hoping to learn?" class="notes-area" style="min-height: 80px;"></textarea>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-primary" id="prepResearchBtn">Research</button>
+            <button class="btn btn-secondary" id="prepEditBtn" style="display:none;">Edit</button>
+            <span id="prepStatus" style="font-size: 12px; color: #6b7280;"></span>
+          </div>
+          <div id="prepResearchResults" class="transcript-container" style="max-height: 140px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Suggestions Section -->
+    <div class="section">
+      <div class="section-header">
+        <span>AI Suggestions</span>
+        <button class="collapse-btn" data-section="suggestions">▼</button>
+      </div>
+      <div class="section-content">
+        <div class="suggestions-list" id="suggestionsList" style="max-height: 200px; overflow-y: auto;">
+          <div class="empty-state">AI suggestions will appear here during the interview</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes Section (AI generated) -->
+    <div class="section">
+      <div class="section-header">
+        <span>Notes</span>
+        <button class="collapse-btn" data-section="notes">▼</button>
+      </div>
+      <div class="section-content">
+        <div id="notesList" class="notes-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;"></div>
+      </div>
+    </div>
+
+    <!-- Live Transcript Section (moved last) -->
     <div class="section">
       <div class="section-header">
         <span>Live Transcript</span>
@@ -307,33 +355,48 @@
       </div>
     </div>
 
-    <!-- AI Suggestions Section -->
+    <!-- Meeting Summary Section (last) -->
     <div class="section">
       <div class="section-header">
-        <span>AI Suggestions</span>
-        <button class="collapse-btn" data-section="suggestions">▼</button>
+        <span>Meeting Summary</span>
+        <button class="collapse-btn" data-section="summary">▼</button>
       </div>
-      <div class="section-content">
-        <div class="suggestions-list" id="suggestionsList">
-          <div class="empty-state">AI suggestions will appear here during the interview</div>
+      <div class="section-content" id="summarySection">
+        <div id="summaryContent" class="transcript-container" style="max-height: 220px;">
+          <div class="empty-state">Summary will appear when the interview ends</div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Notes Section -->
-    <div class="section">
-      <div class="section-header">
-        <span>Notes</span>
-        <button class="collapse-btn" data-section="notes">▼</button>
+  <!-- Settings Modal -->
+  <div id="settingsModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);">
+    <div style="position: absolute; right: 16px; top: 56px; width: 360px; background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+        <span>Settings</span>
+        <button id="settingsClose" class="control-btn" style="color: #374151; background: #f1f5f9;">✕</button>
       </div>
-      <div class="section-content">
-        <textarea class="notes-area" id="notesArea" placeholder="Take notes during the interview..."></textarea>
-        <div class="quick-actions">
-          <div class="quick-action" data-note="Key insight">💡 Key Insight</div>
-          <div class="quick-action" data-note="Follow up">📋 Follow Up</div>
-          <div class="quick-action" data-note="Pain point">⚠️ Pain Point</div>
-          <div class="quick-action" data-note="Opportunity">🎯 Opportunity</div>
-        </div>
+      <div style="padding: 16px; display: grid; grid-template-columns: 1fr; gap: 8px;">
+        <label style="font-size: 12px; color: #6b7280;">OpenAI API Key</label>
+        <input id="apiKeyInput" type="password" placeholder="sk-..." style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;" />
+        <label style="font-size: 12px; color: #6b7280;">Model</label>
+        <select id="modelSelect" style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;"></select>
+        <label style="font-size: 12px; color: #6b7280;">Interview System Prompt</label>
+        <textarea id="promptInput" class="notes-area" placeholder="Guide how the copilot should behave..." style="min-height: 100px;"></textarea>
+        <button class="btn btn-secondary" disabled>Sign in (coming soon)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Modal -->
+  <div id="summaryModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);">
+    <div style="position:absolute; left:50%; top:50%; transform: translate(-50%, -50%); width: 640px; max-width: 90vw; background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+        <span>Meeting Summary</span>
+        <button id="summaryClose" class="control-btn" style="color: #374151; background: #f1f5f9;">✕</button>
+      </div>
+      <div id="summaryBody" style="padding: 16px; max-height: 60vh; overflow-y: auto;">
+        <div class="empty-state">Analyzing transcript and notes…</div>
       </div>
     </div>
   </div>

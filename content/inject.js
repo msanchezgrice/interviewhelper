@@ -19,6 +19,8 @@ function initializeUI() {
   
   // Listen for messages from background
   chrome.runtime.onMessage.addListener(handleBackgroundMessages);
+  // Support local audio recording fallback when Offscreen isn't available
+  setupAudioCapture();
   
   // Set up mutation observer to handle dynamic content
   observePageChanges();
@@ -89,6 +91,7 @@ function createSidebar() {
   sidebarFrame = document.createElement('iframe');
   sidebarFrame.id = 'interviewhelper-sidebar';
   sidebarFrame.src = chrome.runtime.getURL('sidebar/sidebar.html');
+  sidebarFrame.allow = 'clipboard-write;';
   
   // Create resize handle
   const resizeHandle = document.createElement('div');
@@ -121,6 +124,15 @@ function createSidebar() {
   container.appendChild(resizeHandle);
   container.appendChild(sidebarFrame);
   document.body.appendChild(container);
+
+  // Listen for minimize event from inside the iframe
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'minimize') {
+      container.classList.remove('ih-sidebar-visible');
+      container.classList.add('ih-sidebar-hidden');
+      if (floatingButton) floatingButton.style.display = '';
+    }
+  });
 }
 
 // Toggle sidebar visibility
@@ -131,10 +143,15 @@ function toggleSidebar() {
     container.classList.add('ih-sidebar-visible');
     
     // Notify sidebar that it's visible
-    sidebarFrame.contentWindow.postMessage({ type: 'visibility', visible: true }, '*');
+    // Use a data wrapper so sidebar handler supports either shape
+    sidebarFrame.contentWindow.postMessage({ type: 'visibility', data: { visible: true } }, '*');
+    // Hide floating button while open
+    if (floatingButton) floatingButton.style.display = 'none';
   } else {
     container.classList.remove('ih-sidebar-visible');
     container.classList.add('ih-sidebar-hidden');
+    // Show floating button again
+    if (floatingButton) floatingButton.style.display = '';
   }
 }
 
@@ -148,6 +165,17 @@ function handleBackgroundMessages(request, sender, sendResponse) {
     case 'interviewStarted':
       isInterviewActive = true;
       updateButtonStatus('active');
+      
+      // If standalone session, automatically show sidebar
+      if (request.isStandalone) {
+        const container = document.getElementById('interviewhelper-sidebar-container');
+        if (container && container.classList.contains('ih-sidebar-hidden')) {
+          toggleSidebar();
+        }
+        
+        // Show notification for standalone session
+        showNotification('🎤 Standalone interview session started', 'Recording audio from your microphone');
+      }
       break;
       
     case 'interviewStopped':
@@ -160,9 +188,15 @@ function handleBackgroundMessages(request, sender, sendResponse) {
       if (sidebarFrame) {
         sidebarFrame.contentWindow.postMessage({
           type: 'transcriptUpdate',
-          transcript: request.transcript
+          data: { transcript: request.transcript }
         }, '*');
       }
+      break;
+    case 'startLocalRecording':
+      window.postMessage({ type: 'startRecording' }, '*');
+      break;
+    case 'stopLocalRecording':
+      window.postMessage({ type: 'stopRecording' }, '*');
       break;
   }
 }
@@ -247,6 +281,52 @@ function showInitializationToast() {
   console.log('🎯 InterviewHelper: Initialization toast shown');
 }
 
+// Show notification for important events
+function showNotification(title, message) {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    color: #374151;
+    padding: 16px 20px;
+    border-radius: 8px;
+    z-index: 999999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    max-width: 350px;
+    animation: slideInRight 0.3s ease;
+    border-left: 4px solid #667eea;
+  `;
+  
+  notification.innerHTML = `
+    <div style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">${title}</div>
+    <div style="font-size: 13px; color: #6b7280;">${message}</div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Add animation if not already added
+  if (!document.getElementById('ih-notification-styles')) {
+    const style = document.createElement('style');
+    style.id = 'ih-notification-styles';
+    style.textContent = `
+      @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // Remove after 5 seconds
+  setTimeout(() => {
+    notification.style.animation = 'slideInRight 0.3s ease reverse';
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
+}
+
 // Platform-specific audio capture setup
 function setupAudioCapture() {
   // This will be implemented with platform-specific methods
@@ -272,6 +352,13 @@ function setupAudioCapture() {
           isFinal: event.results[event.results.length - 1].isFinal
         }, '*');
       }
+      // Also send fragment to background so it persists
+      try {
+        chrome.runtime.sendMessage({ action: 'transcriptFragment', text: transcript, isFinal: event.results[event.results.length - 1].isFinal });
+      } catch (_) {}
+    };
+    recognition.onerror = (e) => {
+      console.warn('In-page SpeechRecognition error', e);
     };
     
     // Start/stop based on interview state

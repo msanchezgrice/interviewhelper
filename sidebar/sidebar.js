@@ -4,6 +4,8 @@ let interviewStartTime = null;
 let timerInterval = null;
 let currentTranscript = [];
 let currentSuggestions = [];
+let currentNotes = [];
+let lastSuggestionTimestamp = 0;
 
 // DOM elements
 const elements = {
@@ -14,9 +16,26 @@ const elements = {
   timer: document.getElementById('timer'),
   transcriptContainer: document.getElementById('transcriptContainer'),
   suggestionsList: document.getElementById('suggestionsList'),
-  notesArea: document.getElementById('notesArea'),
+  notesArea: document.getElementById('notesArea'), // removed from UI; kept for backward compat
+  notesList: document.getElementById('notesList'),
   settingsBtn: document.getElementById('settingsBtn'),
-  minimizeBtn: document.getElementById('minimizeBtn')
+  minimizeBtn: document.getElementById('minimizeBtn'),
+  settingsModal: document.getElementById('settingsModal'),
+  settingsClose: document.getElementById('settingsClose'),
+  summaryModal: document.getElementById('summaryModal'),
+  summaryClose: document.getElementById('summaryClose'),
+  // Prepare section elements
+  prepName: document.getElementById('prepName'),
+  prepLinkedin: document.getElementById('prepLinkedin'),
+  prepGoal: document.getElementById('prepGoal'),
+  prepResearchBtn: document.getElementById('prepResearchBtn'),
+  prepEditBtn: document.getElementById('prepEditBtn'),
+  prepStatus: document.getElementById('prepStatus'),
+  prepResearchResults: document.getElementById('prepResearchResults'),
+  // Settings elements
+  apiKeyInput: document.getElementById('apiKeyInput'),
+  modelSelect: document.getElementById('modelSelect'),
+  promptInput: document.getElementById('promptInput')
 };
 
 // Initialize when DOM is loaded
@@ -33,8 +52,10 @@ function setupEventListeners() {
   elements.stopBtn.addEventListener('click', stopInterview);
   
   // Header controls
-  elements.settingsBtn.addEventListener('click', openSettings);
+  elements.settingsBtn.addEventListener('click', toggleSettingsModal);
   elements.minimizeBtn.addEventListener('click', minimizeSidebar);
+  if (elements.settingsClose) elements.settingsClose.addEventListener('click', toggleSettingsModal);
+  if (elements.summaryClose) elements.summaryClose.addEventListener('click', toggleSummaryModal);
   
   // Section collapse/expand
   document.querySelectorAll('.collapse-btn').forEach(btn => {
@@ -57,30 +78,66 @@ function setupEventListeners() {
   });
   
   // Auto-save notes
-  elements.notesArea.addEventListener('input', debounce(saveNotes, 1000));
+  if (elements.notesArea) {
+    elements.notesArea.addEventListener('input', debounce(saveNotes, 1000));
+  }
   
   // Listen for messages from content script
   window.addEventListener('message', handleMessages);
+
+  // Prepare research
+  if (elements.prepResearchBtn) {
+    elements.prepResearchBtn.addEventListener('click', onClickResearch);
+  }
+  if (elements.prepEditBtn) {
+    elements.prepEditBtn.addEventListener('click', onClickEditPrepare);
+  }
+  // Settings inputs
+  if (elements.apiKeyInput) {
+    elements.apiKeyInput.addEventListener('change', saveSettingsFromUI);
+  }
+  if (elements.modelSelect) {
+    elements.modelSelect.addEventListener('change', saveSettingsFromUI);
+  }
+  if (elements.promptInput) {
+    elements.promptInput.addEventListener('input', debounce(saveSettingsFromUI, 500));
+  }
 }
 
 // Handle messages from content script
 function handleMessages(event) {
-  const { type, data } = event.data;
+  const message = (event && event.data) ? event.data : {};
+  const type = message && message.type;
+  // Support both { type, data: {...} } and flat { type, ...payload }
+  const payload = (message && message.data) ? message.data : message;
+  if (!type) return;
   
   switch (type) {
-    case 'transcriptUpdate':
-      updateTranscript(data.transcript);
-      break;
-    case 'localTranscript':
-      addTranscriptEntry(data.transcript, data.isFinal);
-      break;
-    case 'suggestion':
-      addSuggestion(data);
-      break;
-    case 'visibility':
-      if (data.visible) {
-        loadInterviewState();
+    case 'transcriptUpdate': {
+      const transcript = payload && payload.transcript ? payload.transcript : [];
+      // Avoid clearing UI when background has no transcript (e.g., local-only recognition)
+      if (Array.isArray(transcript) && transcript.length > 0) {
+        updateTranscript(transcript);
       }
+      break;
+    }
+    case 'localTranscript': {
+      const text = (payload && typeof payload.transcript === 'string') ? payload.transcript : '';
+      const isFinal = !!(payload && payload.isFinal);
+      if (text) addTranscriptEntry(text, isFinal);
+      break;
+    }
+    case 'suggestion': {
+      if (payload) addSuggestion(payload);
+      break;
+    }
+    case 'visibility': {
+      const visible = !!(payload && payload.visible);
+      if (visible) loadInterviewState();
+      break;
+    }
+    default:
+      // ignore unrelated messages on the page bus
       break;
   }
 }
@@ -100,11 +157,21 @@ function startInterview() {
   clearTranscript();
   clearSuggestions();
   
-  // Notify background script
-  chrome.runtime.sendMessage({ action: 'startInterview' });
+  // Check if we're in a standalone session or meeting
+  chrome.storage.local.get(['currentSession'], (result) => {
+    const isStandalone = result.currentSession && result.currentSession.type === 'standalone';
+    
+    if (isStandalone) {
+      // For standalone sessions, use the new interview message
+      chrome.runtime.sendMessage({ action: 'startNewInterview' });
+    } else {
+      // For meeting sessions, use regular interview start
+      chrome.runtime.sendMessage({ action: 'startInterview' });
+    }
+  });
   
-  // Start audio capture
-  window.postMessage({ type: 'startRecording' }, '*');
+  // Start audio capture (post to page context)
+  window.parent.postMessage({ type: 'startRecording' }, '*');
   
   // Generate initial suggestions
   setTimeout(() => {
@@ -124,11 +191,14 @@ function stopInterview() {
   // Notify background script
   chrome.runtime.sendMessage({ action: 'stopInterview' });
   
-  // Stop audio capture
-  window.postMessage({ type: 'stopRecording' }, '*');
+  // Stop audio capture (post to page context)
+  window.parent.postMessage({ type: 'stopRecording' }, '*');
   
   // Save interview data
   saveInterviewData();
+
+  // Kick off meeting summary generation
+  startSummaryGeneration(true);
 }
 
 // Timer functionality
@@ -187,6 +257,8 @@ function addTranscriptEntry(text, isFinal) {
   // Generate AI suggestions based on new transcript
   if (isFinal && isInterviewActive) {
     requestAISuggestion(text);
+    // Ask background to classify notes from transcript
+    classifyTranscriptNote(text);
   }
 }
 
@@ -227,16 +299,32 @@ function requestAISuggestion(context) {
   });
 }
 
+function classifyTranscriptNote(text) {
+  chrome.runtime.sendMessage({ action: 'classifyNote', text }, (response) => {
+    if (response && response.ok && response.note) {
+      currentNotes.unshift(response.note);
+      // Keep only last 100 notes
+      if (currentNotes.length > 100) currentNotes = currentNotes.slice(0, 100);
+      renderNotes();
+      saveNotes();
+    }
+  });
+}
+
 function addSuggestion(suggestion) {
+  const now = Date.now();
+  // Throttle to one every 4 seconds
+  if (now - lastSuggestionTimestamp < 4000) return;
+  lastSuggestionTimestamp = now;
   currentSuggestions.unshift({
     id: Date.now(),
     ...suggestion,
     timestamp: new Date()
   });
   
-  // Keep only last 10 suggestions
-  if (currentSuggestions.length > 10) {
-    currentSuggestions = currentSuggestions.slice(0, 10);
+  // Keep only last 5 suggestions
+  if (currentSuggestions.length > 5) {
+    currentSuggestions = currentSuggestions.slice(0, 5);
   }
   
   renderSuggestions();
@@ -297,16 +385,14 @@ function addQuickNote(noteType) {
 }
 
 function saveNotes() {
-  chrome.storage.local.set({
-    currentNotes: elements.notesArea.value
-  });
+  chrome.storage.local.set({ currentNotes: currentNotes });
 }
 
 function loadNotes() {
   chrome.storage.local.get(['currentNotes'], (result) => {
-    if (result.currentNotes) {
-      elements.notesArea.value = result.currentNotes;
-    }
+    const stored = result.currentNotes;
+    currentNotes = Array.isArray(stored) ? stored : [];
+    renderNotes();
   });
 }
 
@@ -330,6 +416,41 @@ function updateInterviewState(active) {
 function updateUI() {
   updateInterviewState(isInterviewActive);
   loadNotes();
+}
+
+function startSummaryGeneration(openModal) {
+  const container = document.getElementById('summaryBody') || document.getElementById('summaryContent');
+  if (container) {
+    container.innerHTML = '<div class="empty-state">Analyzing transcript and notes…</div>';
+  }
+  if (openModal && elements.summaryModal) elements.summaryModal.style.display = 'block';
+  const prepare = {
+    name: elements.prepName ? elements.prepName.value.trim() : '',
+    linkedin: elements.prepLinkedin ? elements.prepLinkedin.value.trim() : '',
+    goal: elements.prepGoal ? elements.prepGoal.value.trim() : ''
+  };
+  chrome.runtime.sendMessage({ action: 'generateSummary', payload: {
+    transcript: currentTranscript,
+    notes: currentNotes,
+    suggestions: currentSuggestions,
+    prepare
+  } }, (resp) => {
+    if (!resp || !resp.ok) {
+      if (container) container.innerHTML = '<div class="empty-state">Failed to generate summary</div>';
+      return;
+    }
+    const s = resp.summary;
+    const html = `
+      <div class="transcript-entry"><div class="transcript-speaker">Interviewee</div><div>${s.interviewee || ''}</div></div>
+      <div class="transcript-entry"><div class="transcript-speaker">Meeting Goal</div><div>${s.goal || ''}</div></div>
+      <div class="transcript-entry"><div class="transcript-speaker">Highlights</div><div>${(s.highlights&&s.highlights.length? s.highlights.map(h=>`• ${h}`).join('<br/>') : '<em>Processing…</em>')}</div></div>
+      <div class="transcript-entry"><div class="transcript-speaker">Noteworthy Comments</div><div>${(s.quotes&&s.quotes.length? s.quotes.map(q=>`“${q}”`).join('<br/>') : '<em>Processing…</em>')}</div></div>
+      <div class="transcript-entry"><div class="transcript-speaker">Next Steps</div><div>${(s.nextSteps&&s.nextSteps.length? s.nextSteps.map(n=>`• ${n}`).join('<br/>') : '<em>Processing…</em>')}</div></div>
+      <div class="transcript-entry"><div class="transcript-speaker">Potential Feature Needs</div><div>${(s.features&&s.features.length? s.features.map(f=>`• ${f}`).join('<br/>') : '<em>Processing…</em>')}</div></div>
+      <div style="margin-top: 12px; text-align: right;"><a href="${chrome.runtime.getURL('dashboard/dashboard.html')}" target="_blank">See Interview history →</a></div>
+    `;
+    if (container) container.innerHTML = html;
+  });
 }
 
 function toggleSection(e) {
@@ -356,23 +477,40 @@ function toggleSection(e) {
 
 // Utility functions
 function formatTime(date) {
-  return date.toLocaleTimeString('en-US', {
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
+  try {
+    const d = (date instanceof Date) ? date : new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  } catch (_) {
+    return '';
+  }
 }
 
 function copySuggestionToClipboard(suggestionElement) {
   const text = suggestionElement.textContent.replace(/^[A-Z\s]+/, '').trim();
   
   navigator.clipboard.writeText(text).then(() => {
-    // Visual feedback
     suggestionElement.style.background = '#dcfce7';
-    setTimeout(() => {
-      suggestionElement.style.background = '';
-    }, 1000);
+    setTimeout(() => { suggestionElement.style.background = ''; }, 1000);
+  }).catch(() => {
+    // Fallback for pages that block Clipboard API via Permissions Policy
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.top = '-1000px';
+    textarea.style.left = '-1000px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(textarea);
+    suggestionElement.style.background = '#dcfce7';
+    setTimeout(() => { suggestionElement.style.background = ''; }, 1000);
   });
 }
 
@@ -389,18 +527,71 @@ function debounce(func, wait) {
 }
 
 function openSettings() {
-  // For now, just show an alert - could be expanded to open settings modal
-  alert('Settings panel coming soon! For now, you can configure the extension from the Chrome extensions page.');
+  // Deprecated
+}
+
+function toggleSettingsModal() {
+  if (!elements.settingsModal) return;
+  const visible = elements.settingsModal.style.display === 'block';
+  elements.settingsModal.style.display = visible ? 'none' : 'block';
+}
+
+function toggleSummaryModal() {
+  if (!elements.summaryModal) return;
+  const visible = elements.summaryModal.style.display === 'block';
+  elements.summaryModal.style.display = visible ? 'none' : 'block';
 }
 
 function minimizeSidebar() {
-  window.parent.postMessage({ type: 'minimize' }, '*');
+  // Try to let the content script know to hide the sidebar
+  try { window.parent.postMessage({ type: 'minimize' }, '*'); } catch (_) {}
+  // Also close the settings modal if open
+  if (elements.settingsModal) elements.settingsModal.style.display = 'none';
 }
 
 function loadSettings() {
-  chrome.storage.local.get(['settings'], (result) => {
+  chrome.storage.local.get(['settings', 'apiKey'], (result) => {
     const settings = result.settings || {};
-    // Apply any UI settings here
+    // Populate model list from background when API key is present; otherwise default list
+    const setModels = (arr) => {
+      if (!elements.modelSelect) return;
+      elements.modelSelect.innerHTML = '';
+      // Ensure our preferred models are present and ordered
+      const preferred = ['gpt-5', 'gpt-4o'];
+      let models = Array.isArray(arr) && arr.length > 0 ? arr : ['gpt-4o'];
+      models = Array.from(new Set([...preferred, ...models]));
+      models.forEach((modelName) => {
+        const option = document.createElement('option');
+        option.value = modelName;
+        option.textContent = modelName;
+        elements.modelSelect.appendChild(option);
+      });
+    };
+    if (result.apiKey) {
+      chrome.runtime.sendMessage({ action: 'listModels' }, (resp) => {
+        if (resp && resp.ok) setModels(resp.models);
+        else setModels();
+        if (elements.modelSelect) elements.modelSelect.value = settings.aiModel || 'gpt-5';
+      });
+    } else {
+      setModels();
+    }
+    if (elements.apiKeyInput) elements.apiKeyInput.value = result.apiKey || settings.apiKey || '';
+    if (elements.promptInput) {
+      const defaultPrompt = 'You are an expert interview copilot. Keep responses concise, actionable, and context-aware. Suggest follow-ups, probes, and clarifications. Avoid repeating user text. If unsure, ask a clarifying question. Output short, useful guidance.';
+      elements.promptInput.placeholder = defaultPrompt;
+      elements.promptInput.value = settings.prompt || '';
+      if (!elements.promptInput.value) {
+        // Initialize the prompt field with a sensible default so it’s visible to users
+        elements.promptInput.value = defaultPrompt;
+        chrome.storage.local.set({ settings: { ...settings, prompt: defaultPrompt } });
+      }
+    }
+    if (settings.prepare) {
+      if (elements.prepName) elements.prepName.value = settings.prepare.name || '';
+      if (elements.prepLinkedin) elements.prepLinkedin.value = settings.prepare.linkedin || '';
+      if (elements.prepGoal) elements.prepGoal.value = settings.prepare.goal || '';
+    }
   });
 }
 
@@ -411,7 +602,7 @@ function saveInterviewData() {
     endTime: new Date(),
     transcript: currentTranscript,
     suggestions: currentSuggestions,
-    notes: elements.notesArea.value,
+    notes: currentNotes,
     duration: interviewStartTime ? new Date() - interviewStartTime : 0
   };
   
@@ -431,6 +622,94 @@ function loadInterviewState() {
       interviewStartTime = new Date(response.startTime);
       updateInterviewState(true);
       startTimer();
+      // Load persisted transcript and suggestions if available
+      chrome.runtime.sendMessage({ action: 'getTranscript' }, (res2) => {
+        if (res2 && Array.isArray(res2.transcript)) {
+          updateTranscript(res2.transcript);
+        }
+      });
     }
   });
+}
+
+function renderNotes() {
+  if (!elements.notesList) return;
+  if (!currentNotes || currentNotes.length === 0) {
+    elements.notesList.innerHTML = '<div class="empty-state">AI notes will appear here</div>';
+    return;
+  }
+  const html = currentNotes.map((n) => {
+    const ts = n.timestamp ? new Date(n.timestamp) : new Date();
+    const dateStr = ts.toLocaleString();
+    const tag = n.tag || n.category || 'note';
+    return `
+      <div class="transcript-entry">
+        <div class="transcript-speaker">${tag} • ${dateStr}</div>
+        <div>${n.text || n.content || ''}</div>
+      </div>
+    `;
+  }).join('');
+  elements.notesList.innerHTML = html;
+}
+
+// Settings helpers
+function saveSettingsFromUI() {
+  const apiKey = elements.apiKeyInput ? elements.apiKeyInput.value.trim() : '';
+  const aiModel = elements.modelSelect ? elements.modelSelect.value : 'gpt-4o-mini';
+  const prompt = elements.promptInput ? elements.promptInput.value : '';
+  const prepare = {
+    name: elements.prepName ? elements.prepName.value.trim() : '',
+    linkedin: elements.prepLinkedin ? elements.prepLinkedin.value.trim() : '',
+    goal: elements.prepGoal ? elements.prepGoal.value.trim() : ''
+  };
+
+  chrome.storage.local.set({
+    apiKey,
+    settings: {
+      aiModel,
+      prompt,
+      prepare
+    }
+  });
+}
+
+function onClickResearch() {
+  const name = elements.prepName ? elements.prepName.value.trim() : '';
+  const linkedin = elements.prepLinkedin ? elements.prepLinkedin.value.trim() : '';
+  const goal = elements.prepGoal ? elements.prepGoal.value.trim() : '';
+  if (!name && !linkedin && !goal) return;
+  if (elements.prepStatus) elements.prepStatus.textContent = 'Researching...';
+  // Lock fields during research
+  [elements.prepName, elements.prepLinkedin, elements.prepGoal].forEach(el => { if (el) el.disabled = true; });
+  if (elements.prepResearchResults) elements.prepResearchResults.innerHTML = '';
+  saveSettingsFromUI();
+
+  chrome.runtime.sendMessage({ action: 'performResearch', payload: { name, linkedin, goal } }, (response) => {
+    if (!response || !response.ok) {
+      if (elements.prepStatus) elements.prepStatus.textContent = 'Research failed';
+      [elements.prepName, elements.prepLinkedin, elements.prepGoal].forEach(el => { if (el) el.disabled = false; });
+      return;
+    }
+    const notes = Array.isArray(response.notes) ? response.notes : [];
+    const html = notes.map((n) => `
+      <div class="transcript-entry">
+        <div class="transcript-speaker">${(n && n.source) ? n.source : 'AI Research'}</div>
+        <div>${(n && n.text) ? n.text : ''}</div>
+      </div>
+    `).join('');
+    if (elements.prepResearchResults) elements.prepResearchResults.innerHTML = html || '<div class="empty-state">No findings</div>';
+    if (elements.prepStatus) elements.prepStatus.textContent = 'Research complete';
+    if (response.updatedPrompt && elements.promptInput) {
+      elements.promptInput.value = response.updatedPrompt;
+    }
+    // Persist updated prompt in UI settings immediately
+    saveSettingsFromUI();
+    // Keep fields locked after success; show Edit button
+    if (elements.prepEditBtn) elements.prepEditBtn.style.display = 'inline-block';
+  });
+}
+
+function onClickEditPrepare() {
+  [elements.prepName, elements.prepLinkedin, elements.prepGoal].forEach(el => { if (el) el.disabled = false; });
+  if (elements.prepStatus) elements.prepStatus.textContent = 'Editing…';
 }

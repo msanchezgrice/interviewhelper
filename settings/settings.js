@@ -41,7 +41,7 @@ function loadSettings() {
     }
     
     // AI Model
-    document.getElementById('aiModel').value = settings.aiModel || 'gpt-4-turbo-preview';
+    document.getElementById('aiModel').value = settings.aiModel || 'gpt-5';
     
     // Interview Preferences
     document.getElementById('autoStart').checked = settings.autoStart || false;

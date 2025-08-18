@@ -8,14 +8,17 @@
     "tabs",
     "activeTab",
     "scripting",
-    "webNavigation"
+    "webNavigation",
+    "offscreen"
   ],
   "host_permissions": [
     "https://meet.google.com/*",
     "https://*.zoom.us/*",
     "https://teams.microsoft.com/*",
     "https://*.webex.com/*",
-    "https://ftmcmonyfetjeimoxrbt.supabase.co/*"
+    "https://*.linkedin.com/*",
+    "https://ftmcmonyfetjeimoxrbt.supabase.co/*",
+    "https://api.openai.com/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js",
@@ -41,12 +44,13 @@
       "resources": [
         "sidebar/sidebar.html",
         "content/styles.css",
-        "icons/*"
+        "icons/*",
+        "background/offscreen.html"
       ],
       "matches": ["<all_urls>"]
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.openai.com https://ftmcmonyfetjeimoxrbt.supabase.co"
   }
 }
