@@ -22,15 +22,35 @@ export async function GET() {
     return NextResponse.json({ interviews: [] });
   }
 
-  // Get user from Supabase
-  const { data: dbUser } = await supabase
+  // Get or create user in Supabase
+  let { data: dbUser } = await supabase
     .from('users')
     .select('id')
     .eq('clerk_user_id', user.id)
     .single();
 
+  // If user doesn't exist, create them
   if (!dbUser) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    const email = user.emailAddresses?.[0]?.emailAddress || `${user.id}@placeholder.com`;
+    const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || null;
+    
+    const { data: newUser, error: createError } = await supabase
+      .from('users')
+      .insert({
+        clerk_user_id: user.id,
+        email: email,
+        name: name,
+        avatar_url: user.imageUrl || null
+      })
+      .select('id')
+      .single();
+    
+    if (createError) {
+      console.error('Error creating user:', createError);
+      return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+    }
+    
+    dbUser = newUser;
   }
 
   // Get interviews
@@ -44,7 +64,7 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ interviews });
+  return NextResponse.json({ interviews: interviews || [] });
 }
 
 export async function POST(request: Request) {
@@ -59,15 +79,35 @@ export async function POST(request: Request) {
 
   const body = await request.json();
 
-  // Get user from Supabase
-  const { data: dbUser } = await supabase
+  // Get or create user in Supabase
+  let { data: dbUser } = await supabase
     .from('users')
     .select('id')
     .eq('clerk_user_id', user.id)
     .single();
 
+  // If user doesn't exist, create them
   if (!dbUser) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    const email = user.emailAddresses?.[0]?.emailAddress || `${user.id}@placeholder.com`;
+    const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || null;
+    
+    const { data: newUser, error: createError } = await supabase
+      .from('users')
+      .insert({
+        clerk_user_id: user.id,
+        email: email,
+        name: name,
+        avatar_url: user.imageUrl || null
+      })
+      .select('id')
+      .single();
+    
+    if (createError) {
+      console.error('Error creating user:', createError);
+      return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+    }
+    
+    dbUser = newUser;
   }
 
   // Create interview

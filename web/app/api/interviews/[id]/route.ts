@@ -9,10 +9,48 @@ function svc() {
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
     const user = await currentUser();
-    const userId = user?.id;
-    if (!userId) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+    
     const supabase = svc();
-    const { data, error } = await supabase.from('interviews').select('*').eq('user_id', userId).eq('id', params.id).maybeSingle();
+    
+    // Get or create user in Supabase
+    let { data: dbUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('clerk_user_id', user.id)
+      .single();
+
+    // If user doesn't exist, create them
+    if (!dbUser) {
+      const email = user.emailAddresses?.[0]?.emailAddress || `${user.id}@placeholder.com`;
+      const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || null;
+      
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert({
+          clerk_user_id: user.id,
+          email: email,
+          name: name,
+          avatar_url: user.imageUrl || null
+        })
+        .select('id')
+        .single();
+      
+      if (createError) {
+        console.error('Error creating user:', createError);
+        return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+      }
+      
+      dbUser = newUser;
+    }
+    
+    const { data, error } = await supabase
+      .from('interviews')
+      .select('*')
+      .eq('user_id', dbUser.id)
+      .eq('id', params.id)
+      .maybeSingle();
+      
     if (error) throw error;
     return NextResponse.json({ interview: data });
   } catch (e: any) {
