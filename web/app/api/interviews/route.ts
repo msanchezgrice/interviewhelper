@@ -2,51 +2,76 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { currentUser } from '@clerk/nextjs/server';
 
-function svc() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL as string, process.env.SUPABASE_SERVICE_ROLE_KEY as string, { auth: { persistSession: false } });
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function GET() {
-  try {
-    const user = await currentUser();
-    const userId = user?.id;
-    if (!userId) return NextResponse.json({ items: [] }, { status: 200 });
-    const supabase = svc();
-    const { data, error } = await supabase.from('interviews').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50);
-    if (error) throw error;
-    return NextResponse.json({ items: data || [] });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'error' }, { status: 500 });
+  const user = await currentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Get user from Supabase
+  const { data: dbUser } = await supabase
+    .from('users')
+    .select('id')
+    .eq('clerk_user_id', user.id)
+    .single();
+
+  if (!dbUser) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  }
+
+  // Get interviews
+  const { data: interviews, error } = await supabase
+    .from('interviews')
+    .select('*')
+    .eq('user_id', dbUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ interviews });
 }
 
-export async function POST(req: Request) {
-  try {
-    const user = await currentUser();
-    const userId = user?.id;
-    if (!userId) return NextResponse.json({ ok: false, error: 'unauthenticated' }, { status: 401 });
-    const body = await req.json();
-    const row = {
-      id: body.id || undefined,
-      user_id: userId,
-      title: body.title || null,
-      interviewee: body.interviewee || null,
-      goal: body.goal || null,
-      transcript: body.transcript || [],
-      suggestions: body.suggestions || [],
-      notes: body.notes || [],
-      summary: body.summary || {},
-      duration_seconds: body.duration_seconds || null,
-      start_time: body.start_time || null,
-      end_time: body.end_time || null
-    };
-    const supabase = svc();
-    const { data, error } = await supabase.from('interviews').insert(row).select('*').single();
-    if (error) throw error;
-    return NextResponse.json({ ok: true, interview: data });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || 'error' }, { status: 500 });
+export async function POST(request: Request) {
+  const user = await currentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const body = await request.json();
+
+  // Get user from Supabase
+  const { data: dbUser } = await supabase
+    .from('users')
+    .select('id')
+    .eq('clerk_user_id', user.id)
+    .single();
+
+  if (!dbUser) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  }
+
+  // Create interview
+  const { data: interview, error } = await supabase
+    .from('interviews')
+    .insert({
+      user_id: dbUser.id,
+      ...body
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ interview });
 }
 
 
