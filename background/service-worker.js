@@ -37,12 +37,22 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 // Handle alarms to keep service worker alive
-chrome.alarms.onAlarm.addListener(() => {
-  console.log('Keep-alive alarm triggered');
+chrome.alarms.onAlarm.addListener((alarm) => {
+  console.log('Keep-alive alarm triggered:', alarm.name);
+  // Perform a simple operation to keep the service worker active
+  chrome.storage.local.get(['lastPing'], (result) => {
+    chrome.storage.local.set({ lastPing: Date.now() });
+  });
 });
 
 // Set up periodic alarm to keep service worker active
-chrome.alarms.create('keep-alive', { periodInMinutes: 1 });
+chrome.alarms.create('keep-alive', { periodInMinutes: 0.5 }); // Every 30 seconds
+
+// Also respond to any wake-up events
+self.addEventListener('activate', event => {
+  console.log('Service worker activated');
+  event.waitUntil(clients.claim());
+});
 
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -145,9 +155,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       return true; // Keep message channel open for async response
     case 'performResearch':
+      console.log('Received performResearch request:', request.payload);
       performResearchTask(request.payload).then((result) => {
+        console.log('Research result:', result);
         sendResponse(result);
       }).catch((e) => {
+        console.error('Research error:', e);
         sendResponse({ ok: false, error: e?.message || 'Research failed' });
       });
       return true;
@@ -167,10 +180,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
       return true;
     case 'generateSummary':
+      console.log('Received generateSummary request');
       generateMeetingSummary(request.payload).then((summary) => {
+        console.log('Summary generated:', summary);
         sendResponse({ ok: true, summary });
       }).catch((e) => {
-        console.error('generateSummary error', e);
+        console.error('generateSummary error:', e);
         sendResponse({ ok: false, error: e?.message || 'Summary failed' });
       });
       return true;
@@ -439,16 +454,19 @@ async function listOpenAIModels() {
 async function performResearchTask(payload) {
   try {
     const stored = await chrome.storage.local.get(['settings', 'apiKey']);
+    console.log('Storage retrieved:', { hasSettings: !!stored.settings, hasApiKey: !!stored.apiKey });
+    
     const apiKey = stored.apiKey || stored?.settings?.apiKey || '';
     let aiModel = (stored.settings && stored.settings.aiModel) ? stored.settings.aiModel : 'gpt-4o';
     const basePrompt = (stored.settings && stored.settings.prompt) ? stored.settings.prompt : '';
     
     console.log('performResearchTask - API Key exists:', !!apiKey);
+    console.log('performResearchTask - API Key length:', apiKey.length);
     console.log('performResearchTask - Model:', aiModel);
     
-    if (!apiKey) {
-      console.error('No API key found in storage');
-      return { ok: false, error: 'Missing OpenAI API key in Settings' };
+    if (!apiKey || apiKey.length < 10) {
+      console.error('No valid API key found in storage');
+      return { ok: false, error: 'Please add your OpenAI API key in the extension settings' };
     }
     const { name = '', linkedin = '', goal = '' } = payload || {};
     const researchInstructions = `You are a rigorous research assistant.
@@ -479,7 +497,14 @@ CONTEXT:\nName: ${name}\nLinkedIn: ${linkedin}\nInterview goal: ${goal}\nExistin
       })
     });
     if (!resp.ok) {
-      console.warn('Research Chat API failed for model', aiModel, 'status', resp.status);
+      const errorText = await resp.text();
+      console.warn('Research Chat API failed for model', aiModel, 'status', resp.status, 'error:', errorText);
+      
+      // If it's an auth error, return immediately
+      if (resp.status === 401) {
+        return { ok: false, error: 'Invalid API key. Please check your OpenAI API key in settings.' };
+      }
+      
       aiModel = 'gpt-4o';
       resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -614,15 +639,18 @@ async function classifyNoteFromText(text) {
 // Generate meeting summary using transcript, notes, suggestions, and prepare
 async function generateMeetingSummary(payload) {
   const stored = await chrome.storage.local.get(['settings', 'apiKey']);
+  console.log('Storage retrieved for summary:', { hasSettings: !!stored.settings, hasApiKey: !!stored.apiKey });
+  
   const apiKey = stored.apiKey || stored?.settings?.apiKey || '';
-  let aiModel = (stored.settings && stored.settings.aiModel) ? stored.settings.aiModel : 'gpt-5';
+  let aiModel = (stored.settings && stored.settings.aiModel) ? stored.settings.aiModel : 'gpt-4o';
   
   console.log('generateMeetingSummary - API Key exists:', !!apiKey);
+  console.log('generateMeetingSummary - API Key length:', apiKey.length);
   console.log('generateMeetingSummary - Model:', aiModel);
   
-  if (!apiKey) {
-    console.error('No API key found for meeting summary');
-    throw new Error('Missing API key');
+  if (!apiKey || apiKey.length < 10) {
+    console.error('No valid API key found for meeting summary');
+    throw new Error('Please add your OpenAI API key in the extension settings');
   }
   const { transcript = [], notes = [], suggestions = [], prepare = {} } = payload || {};
   const system = {
