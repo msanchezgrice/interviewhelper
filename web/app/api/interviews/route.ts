@@ -2,15 +2,24 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { currentUser } from '@clerk/nextjs/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Check if Supabase is configured
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('Supabase not configured - database operations will not work');
+}
+
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 export async function GET() {
   const user = await currentUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!supabase) {
+    return NextResponse.json({ interviews: [] });
   }
 
   // Get user from Supabase
@@ -42,6 +51,10 @@ export async function POST(request: Request) {
   const user = await currentUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!supabase) {
+    return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
   }
 
   const body = await request.json();

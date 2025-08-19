@@ -447,7 +447,7 @@ function startSummaryGeneration(openModal) {
       <div class="transcript-entry"><div class="transcript-speaker">Noteworthy Comments</div><div>${(s.quotes&&s.quotes.length? s.quotes.map(q=>`“${q}”`).join('<br/>') : '<em>Processing…</em>')}</div></div>
       <div class="transcript-entry"><div class="transcript-speaker">Next Steps</div><div>${(s.nextSteps&&s.nextSteps.length? s.nextSteps.map(n=>`• ${n}`).join('<br/>') : '<em>Processing…</em>')}</div></div>
       <div class="transcript-entry"><div class="transcript-speaker">Potential Feature Needs</div><div>${(s.features&&s.features.length? s.features.map(f=>`• ${f}`).join('<br/>') : '<em>Processing…</em>')}</div></div>
-      <div style="margin-top: 12px; text-align: right;"><a href="${chrome.runtime.getURL('dashboard/dashboard.html')}" target="_blank">See Interview history →</a></div>
+      <div style="margin-top: 12px; text-align: right;"><a href="${window.location.hostname === 'localhost' ? 'http://localhost:3000/dashboard' : 'https://interviewhelper.vercel.app/dashboard'}" target="_blank">See Interview history →</a></div>
     `;
     if (container) container.innerHTML = html;
   });
