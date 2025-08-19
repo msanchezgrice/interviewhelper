@@ -46,10 +46,12 @@ const elements = {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('Sidebar initializing...');
   setupEventListeners();
   loadSettings();
   checkAuthStatus();
   updateUI();
+  console.log('Model select element:', elements.modelSelect);
 });
 
 // Set up all event listeners
@@ -565,11 +567,18 @@ function minimizeSidebar() {
 }
 
 function loadSettings() {
+  console.log('Loading settings...');
   chrome.storage.local.get(['settings', 'apiKey'], (result) => {
+    console.log('Settings loaded:', result);
     const settings = result.settings || {};
     // Populate model list from background when API key is present; otherwise default list
     const setModels = (arr) => {
-      if (!elements.modelSelect) return;
+      console.log('Setting models:', arr);
+      console.log('Model select element exists:', !!elements.modelSelect);
+      if (!elements.modelSelect) {
+        console.error('Model select element not found!');
+        return;
+      }
       elements.modelSelect.innerHTML = '';
       // Ensure our preferred models are present and ordered
       const preferred = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'];
@@ -579,6 +588,7 @@ function loadSettings() {
         preferred.unshift('gpt-5');
       }
       models = Array.from(new Set([...preferred, ...models]));
+      console.log('Final models list:', models);
       models.forEach((modelName) => {
         const option = document.createElement('option');
         option.value = modelName;
@@ -591,6 +601,7 @@ function loadSettings() {
       } else if (elements.modelSelect) {
         elements.modelSelect.value = 'gpt-4o';
       }
+      console.log('Model select value set to:', elements.modelSelect.value);
     };
     
     // Always populate models, even without API key
