@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function ExtensionAuthClient({ 
   userInfo, 
@@ -9,8 +10,18 @@ export default function ExtensionAuthClient({
   userInfo: { id: string; email: string; name: string };
   token: string;
 }) {
+  const router = useRouter();
+  
   useEffect(() => {
-    // Send the token back to the extension
+    // Check if we already have token in URL (to prevent infinite redirect)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('token')) {
+      // Token is already in URL, don't redirect again
+      // Extension should detect this page and extract the token
+      return;
+    }
+    
+    // Add token to URL for extension to detect
     const params = new URLSearchParams({
       token: token,
       userId: userInfo.id,
@@ -18,10 +29,14 @@ export default function ExtensionAuthClient({
       name: userInfo.name,
     });
     
-    // Redirect with the token in the URL
-    // The extension will detect this URL pattern and extract the token
-    window.location.href = `/extension-auth-success?${params.toString()}`;
-  }, [userInfo, token]);
+    // Update URL without causing a page reload
+    window.history.replaceState({}, '', `/extension-auth-success?${params.toString()}`);
+    
+    // After 3 seconds, redirect to dashboard
+    setTimeout(() => {
+      router.push('/dashboard');
+    }, 3000);
+  }, [userInfo, token, router]);
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

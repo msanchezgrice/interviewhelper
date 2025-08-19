@@ -692,41 +692,64 @@ function getCurrentTranscriptContext() {
 
 // Save complete interview data
 async function saveInterviewData() {
+  const endTime = new Date();
+  const durationSeconds = Math.floor((endTime - interviewStartTime) / 1000);
+  
+  // Format transcript for saving
+  const transcriptText = currentTranscript
+    .map(entry => `${entry.speaker}: ${entry.text}`)
+    .join('\n\n');
+  
   const interviewData = {
-    startTime: interviewStartTime,
-    endTime: new Date(),
-    transcript: currentTranscript,
-    duration: new Date() - interviewStartTime,
-    notes: []
+    title: `Interview - ${new Date(interviewStartTime).toLocaleDateString()}`,
+    started_at: interviewStartTime,
+    ended_at: endTime,
+    transcript: transcriptText,
+    duration_seconds: durationSeconds,
+    status: 'completed',
+    session_id: `ext_${Date.now()}`,
+    segments: currentTranscript.map((entry, index) => ({
+      speaker: entry.speaker || 'unknown',
+      text: entry.text,
+      timestamp_ms: index * 1000 // Approximate timestamps
+    }))
   };
   
   try {
-    if (supabaseClient) {
-      const result = await supabaseClient.saveInterview(interviewData);
-      console.log('Interview saved to Supabase:', result);
-      currentInterviewId = result[0]?.id;
-    }
-    
-    // Also save to local storage as backup
-    chrome.storage.local.get(['interviews'], (result) => {
-      const interviews = result.interviews || [];
-      interviews.push({
-        id: currentInterviewId || Date.now(),
-        ...interviewData
-      });
-      chrome.storage.local.set({ interviews });
+    // Try to save to the web app database via API
+    const response = await fetch('https://ideafeedback.co/api/extension/save-interview', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Extension-Request': 'true'
+      },
+      credentials: 'include',
+      body: JSON.stringify(interviewData)
     });
-  } catch (error) {
-    console.error('Error saving interview:', error);
     
-    // Fallback to local storage only
-    chrome.storage.local.get(['interviews'], (result) => {
-      const interviews = result.interviews || [];
-      interviews.push({
-        id: Date.now(),
-        ...interviewData
-      });
-      chrome.storage.local.set({ interviews });
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Interview saved to database:', result);
+      currentInterviewId = result.interview?.id;
+    } else {
+      console.warn('Failed to save to database, saving locally');
+    }
+  } catch (error) {
+    console.error('Error saving interview to API:', error);
+  }
+  
+  // Always save to local storage as backup
+  chrome.storage.local.get(['interviews'], (result) => {
+    const interviews = result.interviews || [];
+    interviews.push({
+      id: currentInterviewId || Date.now(),
+      ...interviewData,
+      startTime: interviewStartTime,
+      endTime: endTime,
+      transcript: currentTranscript,
+      duration: durationSeconds * 1000
+    });
+    chrome.storage.local.set({ interviews });
     });
   }
 }

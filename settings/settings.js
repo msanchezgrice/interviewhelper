@@ -68,45 +68,46 @@ function setupEventListeners() {
 
 // Handle sign in
 function handleSignIn() {
-  // Generate a random state for security
-  const state = Math.random().toString(36).substring(7);
-  chrome.storage.local.set({ authState: state });
+  // Simply open the sign-in page - user will need to manually return to settings
+  const signInUrl = `https://ideafeedback.co/sign-in`;
+  chrome.tabs.create({ url: signInUrl });
   
-  // Open the sign-in page with a callback URL
-  const signInUrl = `https://ideafeedback.co/sign-in?extension=true&state=${state}`;
-  chrome.tabs.create({ url: signInUrl }, (tab) => {
-    // Listen for the tab to complete authentication
-    chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-      if (tabId === tab.id && changeInfo.url) {
-        // Check if we're on the success callback page
-        if (changeInfo.url.includes('ideafeedback.co/extension-auth-success')) {
-          // Extract token from URL
-          const url = new URL(changeInfo.url);
-          const token = url.searchParams.get('token');
-          const userInfo = {
-            name: url.searchParams.get('name'),
-            email: url.searchParams.get('email'),
-            id: url.searchParams.get('userId')
-          };
-          
-          if (token) {
-            // Store the token and user info
-            chrome.storage.local.set({ 
-              clerkToken: token,
-              userInfo: userInfo
-            }, () => {
-              // Close the auth tab
-              chrome.tabs.remove(tabId);
-              // Update UI
-              showSignedInState(userInfo);
-              // Remove the listener
-              chrome.tabs.onUpdated.removeListener(listener);
-            });
-          }
+  // Show a message to the user
+  showSuccessMessage('Opening sign-in page. Please return to settings after signing in.');
+  
+  // Set up a periodic check for auth status
+  const checkInterval = setInterval(async () => {
+    try {
+      const response = await fetch('https://ideafeedback.co/api/extension/auth-check', {
+        credentials: 'include',
+        headers: {
+          'X-Extension-Request': 'true'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated && data.user) {
+          // Store user info
+          chrome.storage.local.set({
+            userInfo: {
+              email: data.user.email,
+              name: data.user.name,
+              id: data.user.id
+            }
+          }, () => {
+            showSignedInState(data.user);
+            clearInterval(checkInterval);
+          });
         }
       }
-    });
-  });
+    } catch (error) {
+      console.error('Error checking auth:', error);
+    }
+  }, 2000); // Check every 2 seconds
+  
+  // Stop checking after 2 minutes
+  setTimeout(() => clearInterval(checkInterval), 120000);
 }
 
 // Handle sign out

@@ -18,51 +18,56 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Check authentication status
 async function checkAuthStatus() {
+  const accountStatusEl = document.getElementById('accountStatus');
+  
   // First check local storage for cached auth info
-  chrome.storage.local.get(['clerkToken', 'userInfo'], async (result) => {
-    const accountStatusEl = document.getElementById('accountStatus');
-    
-    if (result.clerkToken && result.userInfo) {
-      // User is signed in via extension settings
-      accountStatusEl.textContent = result.userInfo.email || 'Signed in';
+  chrome.storage.local.get(['userInfo'], async (result) => {
+    if (result.userInfo && result.userInfo.email) {
+      // User info is cached, show as signed in
+      accountStatusEl.textContent = result.userInfo.email;
       accountStatusEl.style.color = '#10b981';
-    } else {
-      // Check if user is signed in on the website by making a request
-      try {
-        const response = await fetch('https://ideafeedback.co/api/extension/auth-check', {
-          credentials: 'include',
-          headers: {
-            'X-Extension-Request': 'true'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.authenticated && data.user) {
-            accountStatusEl.textContent = data.user.email || 'Signed in';
-            accountStatusEl.style.color = '#10b981';
-            
-            // Cache the user info
-            chrome.storage.local.set({
-              userInfo: {
-                email: data.user.email,
-                name: data.user.name,
-                id: data.user.id
-              }
-            });
-          } else {
-            accountStatusEl.textContent = 'Not signed in';
-            accountStatusEl.style.color = '#6b7280';
-          }
+      return; // Exit early if we have cached info
+    }
+    
+    // No cached info, check with the server
+    try {
+      const response = await fetch('https://ideafeedback.co/api/extension/auth-check', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'X-Extension-Request': 'true',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated && data.user) {
+          accountStatusEl.textContent = data.user.email || 'Signed in';
+          accountStatusEl.style.color = '#10b981';
+          
+          // Cache the user info for next time
+          chrome.storage.local.set({
+            userInfo: {
+              email: data.user.email,
+              name: data.user.name,
+              id: data.user.id
+            }
+          });
         } else {
           accountStatusEl.textContent = 'Not signed in';
           accountStatusEl.style.color = '#6b7280';
+          // Clear any cached info if not authenticated
+          chrome.storage.local.remove('userInfo');
         }
-      } catch (error) {
-        // If can't reach the server, check if we have cached info
+      } else {
         accountStatusEl.textContent = 'Not signed in';
         accountStatusEl.style.color = '#6b7280';
       }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      accountStatusEl.textContent = 'Not signed in';
+      accountStatusEl.style.color = '#6b7280';
     }
   });
 }
