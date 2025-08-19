@@ -53,6 +53,6 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.openai.com https://ftmcmonyfetjeimoxrbt.supabase.co"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.openai.com https://ftmcmonyfetjeimoxrbt.supabase.co https://ideafeedback.co https://www.ideafeedback.co"
   }
 }

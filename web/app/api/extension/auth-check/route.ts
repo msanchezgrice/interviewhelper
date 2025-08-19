@@ -1,68 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 
-// This endpoint allows the extension to check if user is authenticated
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Check if this is a request from the extension
-    const isExtension = request.headers.get('X-Extension-Request') === 'true';
-    
-    if (!isExtension) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    // Get the current user from Clerk
     const user = await currentUser();
     
-    if (user) {
-      return NextResponse.json({
-        authenticated: true,
-        user: {
-          id: user.id,
-          email: user.emailAddresses[0]?.emailAddress || '',
-          name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
-        }
-      }, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Credentials': 'true',
-        }
-      });
-    } else {
-      return NextResponse.json({
-        authenticated: false,
-        user: null
-      }, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Credentials': 'true',
-        }
-      });
+    if (!user) {
+      return NextResponse.json({ authenticated: false });
     }
-  } catch (error) {
-    console.error('Error checking auth status:', error);
-    return NextResponse.json(
-      { authenticated: false, user: null },
-      { 
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Credentials': 'true',
-        }
+    
+    return NextResponse.json({
+      authenticated: true,
+      user: {
+        id: user.id,
+        email: user.emailAddresses?.[0]?.emailAddress,
+        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || null,
+        imageUrl: user.imageUrl
       }
-    );
+    });
+  } catch (error) {
+    console.error('Auth check error:', error);
+    return NextResponse.json({ authenticated: false });
   }
 }
 
-// Handle CORS preflight
-export async function OPTIONS(request: NextRequest) {
+// Add CORS headers for extension
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'X-Extension-Request, Content-Type',
-      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true'
     }
   });
 }

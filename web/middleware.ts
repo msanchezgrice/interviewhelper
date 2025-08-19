@@ -4,12 +4,31 @@ import { NextResponse } from 'next/server';
 const isPublicRoute = createRouteMatcher([
   '/',
   '/api/health',
+  '/api/extension/(.*)',  // Allow extension API routes
   '/sign-in(.*)',
   '/sign-up(.*)'
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId, redirectToSignIn } = await auth();
+  
+  // Handle CORS for extension API routes
+  if (req.nextUrl.pathname.startsWith('/api/extension/')) {
+    const response = NextResponse.next();
+    
+    // Add CORS headers for extension
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { status: 200, headers: response.headers });
+    }
+    
+    return response;
+  }
   
   // If the user is not signed in and the route is not public, redirect to sign-in
   if (!userId && !isPublicRoute(req)) {
