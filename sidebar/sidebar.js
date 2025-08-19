@@ -572,8 +572,12 @@ function loadSettings() {
       if (!elements.modelSelect) return;
       elements.modelSelect.innerHTML = '';
       // Ensure our preferred models are present and ordered
-      const preferred = ['gpt-5', 'gpt-4o'];
-      let models = Array.isArray(arr) && arr.length > 0 ? arr : ['gpt-4o'];
+      const preferred = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'];
+      let models = Array.isArray(arr) && arr.length > 0 ? arr : preferred;
+      // Include gpt-5 if it's in the response
+      if (arr && arr.includes('gpt-5')) {
+        preferred.unshift('gpt-5');
+      }
       models = Array.from(new Set([...preferred, ...models]));
       models.forEach((modelName) => {
         const option = document.createElement('option');
@@ -581,15 +585,25 @@ function loadSettings() {
         option.textContent = modelName;
         elements.modelSelect.appendChild(option);
       });
+      // Set the current value
+      if (elements.modelSelect && settings.aiModel) {
+        elements.modelSelect.value = settings.aiModel;
+      } else if (elements.modelSelect) {
+        elements.modelSelect.value = 'gpt-4o';
+      }
     };
+    
+    // Always populate models, even without API key
     if (result.apiKey) {
       chrome.runtime.sendMessage({ action: 'listModels' }, (resp) => {
-        if (resp && resp.ok) setModels(resp.models);
-        else setModels();
-        if (elements.modelSelect) elements.modelSelect.value = settings.aiModel || 'gpt-5';
+        if (resp && resp.ok && resp.models) {
+          setModels(resp.models);
+        } else {
+          setModels([]);
+        }
       });
     } else {
-      setModels();
+      setModels([]);
     }
     if (elements.apiKeyInput) elements.apiKeyInput.value = result.apiKey || settings.apiKey || '';
     if (elements.promptInput) {

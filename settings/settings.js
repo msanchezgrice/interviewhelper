@@ -7,8 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Check authentication status
 async function checkAuthStatus() {
-  chrome.storage.local.get(['clerkToken', 'userInfo'], (result) => {
-    if (result.clerkToken && result.userInfo) {
+  chrome.storage.local.get(['userInfo'], (result) => {
+    if (result.userInfo) {
       showSignedInState(result.userInfo);
     } else {
       showSignedOutState();
@@ -112,7 +112,7 @@ function handleSignIn() {
 
 // Handle sign out
 function handleSignOut() {
-  chrome.storage.local.remove(['clerkToken', 'userInfo'], () => {
+  chrome.storage.local.remove(['userInfo'], () => {
     showSignedOutState();
     showSuccessMessage('Signed out successfully!');
   });
