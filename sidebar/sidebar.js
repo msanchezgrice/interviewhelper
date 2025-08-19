@@ -35,13 +35,20 @@ const elements = {
   // Settings elements
   apiKeyInput: document.getElementById('apiKeyInput'),
   modelSelect: document.getElementById('modelSelect'),
-  promptInput: document.getElementById('promptInput')
+  promptInput: document.getElementById('promptInput'),
+  // Auth elements
+  signInBtn: document.getElementById('signInBtn'),
+  signOutBtn: document.getElementById('signOutBtn'),
+  userInfo: document.getElementById('userInfo'),
+  userEmail: document.getElementById('userEmail'),
+  userAvatar: document.getElementById('userAvatar')
 };
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   loadSettings();
+  checkAuthStatus();
   updateUI();
 });
 
@@ -101,6 +108,14 @@ function setupEventListeners() {
   }
   if (elements.promptInput) {
     elements.promptInput.addEventListener('input', debounce(saveSettingsFromUI, 500));
+  }
+  
+  // Auth buttons
+  if (elements.signInBtn) {
+    elements.signInBtn.addEventListener('click', handleSignIn);
+  }
+  if (elements.signOutBtn) {
+    elements.signOutBtn.addEventListener('click', handleSignOut);
   }
 }
 
@@ -712,4 +727,69 @@ function onClickResearch() {
 function onClickEditPrepare() {
   [elements.prepName, elements.prepLinkedin, elements.prepGoal].forEach(el => { if (el) el.disabled = false; });
   if (elements.prepStatus) elements.prepStatus.textContent = 'Editing…';
+}
+
+// Auth functions
+function checkAuthStatus() {
+  chrome.storage.local.get(['userInfo'], (result) => {
+    if (result.userInfo) {
+      showSignedInState(result.userInfo);
+    } else {
+      showSignedOutState();
+    }
+  });
+}
+
+function handleSignIn() {
+  // Open the website sign-in page in a new tab
+  chrome.tabs.create({ url: 'https://ideafeedback.co/sign-in' });
+  
+  // Start checking for successful auth
+  const checkInterval = setInterval(async () => {
+    try {
+      const response = await fetch('https://ideafeedback.co/api/extension/auth-check', {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated && data.user) {
+          // Save user info to storage
+          chrome.storage.local.set({ userInfo: data.user }, () => {
+            showSignedInState(data.user);
+            clearInterval(checkInterval);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking auth:', error);
+    }
+  }, 2000); // Check every 2 seconds
+  
+  // Stop checking after 2 minutes
+  setTimeout(() => clearInterval(checkInterval), 120000);
+}
+
+function handleSignOut() {
+  chrome.storage.local.remove(['userInfo'], () => {
+    showSignedOutState();
+  });
+}
+
+function showSignedInState(user) {
+  if (elements.signInBtn) elements.signInBtn.style.display = 'none';
+  if (elements.userInfo) elements.userInfo.style.display = 'block';
+  if (elements.userEmail) elements.userEmail.textContent = user.email || '';
+  if (elements.userAvatar && user.imageUrl) {
+    elements.userAvatar.src = user.imageUrl;
+    elements.userAvatar.style.display = 'block';
+  }
+}
+
+function showSignedOutState() {
+  if (elements.signInBtn) elements.signInBtn.style.display = 'block';
+  if (elements.userInfo) elements.userInfo.style.display = 'none';
 }
