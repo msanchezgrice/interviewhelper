@@ -1,5 +1,8 @@
-// Popup functionality for InterviewHelper AI
+// Popup functionality for Idea Feedback
 document.addEventListener('DOMContentLoaded', async () => {
+  // Check authentication status
+  checkAuthStatus();
+  
   // Load extension status
   loadStatus();
   
@@ -12,6 +15,57 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check API key
   checkAPIKey();
 });
+
+// Check authentication status
+async function checkAuthStatus() {
+  // First check local storage for cached auth info
+  chrome.storage.local.get(['clerkToken', 'userInfo'], async (result) => {
+    const accountStatusEl = document.getElementById('accountStatus');
+    
+    if (result.clerkToken && result.userInfo) {
+      // User is signed in via extension settings
+      accountStatusEl.textContent = result.userInfo.email || 'Signed in';
+      accountStatusEl.style.color = '#10b981';
+    } else {
+      // Check if user is signed in on the website by making a request
+      try {
+        const response = await fetch('https://ideafeedback.co/api/extension/auth-check', {
+          credentials: 'include',
+          headers: {
+            'X-Extension-Request': 'true'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated && data.user) {
+            accountStatusEl.textContent = data.user.email || 'Signed in';
+            accountStatusEl.style.color = '#10b981';
+            
+            // Cache the user info
+            chrome.storage.local.set({
+              userInfo: {
+                email: data.user.email,
+                name: data.user.name,
+                id: data.user.id
+              }
+            });
+          } else {
+            accountStatusEl.textContent = 'Not signed in';
+            accountStatusEl.style.color = '#6b7280';
+          }
+        } else {
+          accountStatusEl.textContent = 'Not signed in';
+          accountStatusEl.style.color = '#6b7280';
+        }
+      } catch (error) {
+        // If can't reach the server, check if we have cached info
+        accountStatusEl.textContent = 'Not signed in';
+        accountStatusEl.style.color = '#6b7280';
+      }
+    }
+  });
+}
 
 // Set up event listeners
 function setupEventListeners() {
