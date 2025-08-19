@@ -23,13 +23,26 @@ chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.local.set({
     settings: {
       apiKey: '',
-      aiModel: 'gpt-5',
+      aiModel: 'gpt-4o',
       autoTranscribe: true,
       showSuggestions: true,
       theme: 'light'
     }
   });
 });
+
+// Keep service worker active
+chrome.runtime.onStartup.addListener(() => {
+  console.log('Extension started');
+});
+
+// Handle alarms to keep service worker alive
+chrome.alarms.onAlarm.addListener(() => {
+  console.log('Keep-alive alarm triggered');
+});
+
+// Set up periodic alarm to keep service worker active
+chrome.alarms.create('keep-alive', { periodInMinutes: 1 });
 
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -297,7 +310,7 @@ async function generateSuggestion(context) {
   try {
     const stored = await chrome.storage.local.get(['settings', 'apiKey']);
     const apiKey = stored.apiKey;
-    let aiModel = (stored.settings && stored.settings.aiModel) ? stored.settings.aiModel : 'gpt-5';
+    let aiModel = (stored.settings && stored.settings.aiModel) ? stored.settings.aiModel : 'gpt-4o';
     
     if (!apiKey) {
       return {
@@ -427,9 +440,14 @@ async function performResearchTask(payload) {
   try {
     const stored = await chrome.storage.local.get(['settings', 'apiKey']);
     const apiKey = stored.apiKey || stored?.settings?.apiKey || '';
-    let aiModel = (stored.settings && stored.settings.aiModel) ? stored.settings.aiModel : 'gpt-5';
+    let aiModel = (stored.settings && stored.settings.aiModel) ? stored.settings.aiModel : 'gpt-4o';
     const basePrompt = (stored.settings && stored.settings.prompt) ? stored.settings.prompt : '';
+    
+    console.log('performResearchTask - API Key exists:', !!apiKey);
+    console.log('performResearchTask - Model:', aiModel);
+    
     if (!apiKey) {
+      console.error('No API key found in storage');
       return { ok: false, error: 'Missing OpenAI API key in Settings' };
     }
     const { name = '', linkedin = '', goal = '' } = payload || {};
@@ -598,7 +616,14 @@ async function generateMeetingSummary(payload) {
   const stored = await chrome.storage.local.get(['settings', 'apiKey']);
   const apiKey = stored.apiKey || stored?.settings?.apiKey || '';
   let aiModel = (stored.settings && stored.settings.aiModel) ? stored.settings.aiModel : 'gpt-5';
-  if (!apiKey) throw new Error('Missing API key');
+  
+  console.log('generateMeetingSummary - API Key exists:', !!apiKey);
+  console.log('generateMeetingSummary - Model:', aiModel);
+  
+  if (!apiKey) {
+    console.error('No API key found for meeting summary');
+    throw new Error('Missing API key');
+  }
   const { transcript = [], notes = [], suggestions = [], prepare = {} } = payload || {};
   const system = {
     role: 'system',
