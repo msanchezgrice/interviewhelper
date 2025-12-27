@@ -1,3 +1,60 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    font-family: var(--font-body), "Manrope", sans-serif;
+    background-color: #f6f3ef;
+    color: #1f2937;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display), "Fraunces", serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .animate-fade-up-delay {
+    animation: fadeUp 0.8s ease 0.2s both;
+  }
+
+  .animate-fade-up-delay-lg {
+    animation: fadeUp 0.8s ease 0.35s both;
+  }
+
+  .floaty {
+    animation: floaty 6s ease-in-out infinite;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
