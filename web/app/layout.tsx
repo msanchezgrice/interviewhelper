@@ -1,5 +1,6 @@
 import './globals.css';
 import { ClerkProvider } from '@clerk/nextjs';
+import Script from 'next/script';
 import React from 'react';
 
 export const metadata = {
@@ -14,7 +15,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   const wrap = (inner: React.ReactNode) => (
     <html lang="en">
-      <body>{inner}</body>
+      <body>
+        {inner}
+        <Script src="/posthog.js" strategy="afterInteractive" />
+      </body>
     </html>
   );
   if (hasClerk) {
@@ -22,5 +26,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }
   return wrap(children);
 }
-
 
